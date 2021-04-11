@@ -1,1 +1,3 @@
-# BCC_stats551
+# BLCC_stats551
+
+## Bayesian Logistic Classifier Chains
