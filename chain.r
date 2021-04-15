@@ -7,7 +7,6 @@
 # set up: ---------------------------------------------------------------------
 library(data.table)
 library(rstanarm)
-options(mc.cores = 6)
 
 
 # voting scheme
@@ -43,23 +42,20 @@ cc = function(label,
   
   ccmodel$models = list()
   for(i in chain_order){
-    var_lab = names(label)[i]
+    var_lab = i
     rhs = paste(var_feat, collapse ='+')
     formula = as.formula(paste(var_lab, '~', rhs, sep = ''))
-    classifier = stan_glm(formula=formula,
-                          data = dat,
-                          family = binomial(link='logit'),
-                          prior = prior,
-                          prior_intercept = prior_intercept,
-                          chains = chains,
-                          cores = cores
-    )
+    classifier = stan_glm(formula=formula, data = dat, family = binomial(link='logit'),
+             prior = prior, prior_intercept = prior_intercept, chains = chains, 
+             QR = TRUE, cores = cores)
     
     ccmodel$models[[i]] = classifier
     
-    probs = posterior_linpred(classifier, transform = TRUE)
-    pred_lab = as.integer(colMeans(preds) > 0.5)
-    dat[[paste0('prev_', i)]] = pred_lab
+    probs = posterior_epred(classifier)
+    pred_lab = as.integer(colMeans(probs) > 0.5)
+    pred_lab = ifelse(pred_lab == 1, 1-sum(pred_lab)/length(pred_lab), 
+                      -sum(pred_lab)/length(pred_lab))
+    dat[[paste0('prev_', i)]] = as.factor(pred_lab)
     var_feat = c(var_feat, paste0('prev_', i))
      
   }
@@ -109,17 +105,18 @@ ecc = function(label,
   idx <- lapply(seq(m), function(iteration) {
     list(
       rows = sample(1:nrow(feature), nrow, replace = T),
-      cols = sample(names(feature), eccmodel$ncol),
-      chain_order = sample(names(labels))
+      cols = sample(names(feature), ncol),
+      chain_order = sample(names(label))
     )
   })
   
-  eccmodel$models <- parallel::mclapply(seq(m), function(iteration) {
-    sub_feature = feature[idx[[iteration]]$rows, idx[[iteration]]$cols]
-    chain_order <- idx[[iteration]]$chain_order
+  eccmodel$models = parallel::mclapply(seq(m), function(iteration) {
+    sub_feature = feature[idx[[iteration]]$rows, .SD, .SDcols = idx[[iteration]]$cols]
+    print(sub_feature)
+    chain_order = idx[[iteration]]$chain_order
     
-    ccmodel <- cc(label, sub_feature, chain_order, prior = prior, 
-                  prior_intercept = prior_intercept, chains=chains, cores = cores)
+    ccmodel = cc(label, sub_feature, chain_order, prior = prior, 
+                  prior_intercept = prior_intercept, chains=chains, cores = 1)
     ccmodel$attrs = colnames(sub_feature)
     rm(sub_feature)
     
