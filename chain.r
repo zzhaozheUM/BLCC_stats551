@@ -7,6 +7,7 @@
 # set up: ---------------------------------------------------------------------
 library(data.table)
 library(rstanarm)
+library(pROC)
 
 
 # voting scheme
@@ -39,6 +40,7 @@ cc = function(label,
   num_label = ncol(label)
   var_feat = names(feature)
   dat = cbind(label, feature)
+  thresholds = floor(colMeans(hours)*100)/100
   
   ccmodel$models = list()
   for(i in chain_order){
@@ -47,15 +49,17 @@ cc = function(label,
     formula = as.formula(paste(var_lab, '~', rhs, sep = ''))
     classifier = stan_glm(formula=formula, data = dat, family = binomial(link='logit'),
              prior = prior, prior_intercept = prior_intercept, chains = chains, 
-             QR = TRUE, cores = cores)
+             cores = cores, QR = T)
     
     ccmodel$models[[i]] = classifier
     
     probs = posterior_epred(classifier)
-    pred_lab = as.integer(colMeans(probs) > 0.5)
-    pred_lab = ifelse(pred_lab == 1, 1-sum(pred_lab)/length(pred_lab), 
-                      -sum(pred_lab)/length(pred_lab))
-    dat[[paste0('prev_', i)]] = as.factor(pred_lab)
+    pred_lab = as.integer(colMeans(probs) > thresholds[var_lab])
+    roc_obj = roc(label[[var_lab]], pred_lab)
+    print(auc(roc_obj))
+    #pred_lab = ifelse(pred_lab == 1, 1-sum(pred_lab)/length(pred_lab), 
+    #                  -sum(pred_lab)/length(pred_lab))
+    dat[[paste0('prev_', i)]] = pred_lab
     var_feat = c(var_feat, paste0('prev_', i))
      
   }
