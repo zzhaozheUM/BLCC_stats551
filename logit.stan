@@ -51,3 +51,10 @@ model {
   y ~ bernoulli(rho);
 }
 
+ //generate synthetic data
+ generated quantities {
+   int y_rep[N];
+ 
+   y_rep = bernoulli_rng(rho);
+ }
+
