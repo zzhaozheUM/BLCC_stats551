@@ -1,5 +1,6 @@
 # import required packages
 library(tidyverse)
+library(data.table)
 
 scaled_factor = function(x){
   ##
@@ -36,3 +37,22 @@ scaled_data = function(data_mat){
   return(X_mat)
 }
 
+X = data.table::fread("ATUS_covariates_new.csv") %>% 
+  filter(TUYEAR == 2019)
+
+sleep = data.table::fread("ATUS_sleep_periods.csv") %>% 
+  inner_join(., X %>% select(TUCASEID), by = "TUCASEID")
+
+sleep = sleep %>% select(-TUCASEID)
+X = X %>% select(-c(TUCASEID, TUYEAR))
+
+idx = seq(1, 1440, 60)
+hours = lapply(idx, function(i) sleep[, i:(i+59) ])
+hours = lapply(hours, function(col) rowSums(col))
+hours = do.call(cbind, hours)
+hours = as.data.table(hours>30)
+hours = hours*1
+
+X_mat = scaled_data(X)
+
+rm(sleep, idx)
