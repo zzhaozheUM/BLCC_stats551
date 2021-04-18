@@ -149,7 +149,7 @@ ecc = function(label,
 predict.ECC = function(object, newdata, thresholds){
   
   all_preds = lapply(object$models, function(ccmodel) {
-    predict.CC(ccmodel, newdata[, .SD, .SDcols = ccmodel$attrs], thresholds)
+    predict.CC(ccmodel, subset(newdata, ccmodel$attrs), thresholds)
   })
   
   preds_list = lapply(all_preds, function(pred) {
