@@ -6,7 +6,6 @@
 
 # set up: ---------------------------------------------------------------------
 library(data.table)
-library(rstanarm)
 library(pROC)
 
 
@@ -98,11 +97,15 @@ predict.CC = function(object, newdata, thresholds){
 # Emsemble Classifier Chain
 ecc = function(label,
                feature,
-               prior, 
-               prior_intercept,
-               chains, 
                cores, 
                thresholds,
+               cores,
+               alpha_nu = 5,
+               beta_nu = 5,
+               chains = 4,
+               iter = 2000,
+               warmup = floor(iter/2),
+               thin = 1,
                m = 10, 
                subsample = 0.75, 
                attr.space = 0.5){
@@ -116,19 +119,20 @@ ecc = function(label,
   idx <- lapply(seq(m), function(iteration) {
     list(
       rows = sample(1:nrow(feature), nrow, replace = T),
-      cols = sample(names(feature), ncol),
+      cols = sample(colnames(feature), ncol),
       chain_order = sample(names(label))
     )
   })
   
   eccmodel$models = parallel::mclapply(seq(m), function(iteration) {
-    sub_feature = feature[idx[[iteration]]$rows, .SD, .SDcols = idx[[iteration]]$cols]
-    print(sub_feature)
+    sub_feature = subset(feature[idx[[iteration]]$rows, ], 
+                         select = idx[[iteration]]$cols)
+    sub_label = label[idx[[iteration]]$rows, ]
+    # print(sub_feature)
     chain_order = idx[[iteration]]$chain_order
-    
-    ccmodel = cc(label, sub_feature, chain_order, prior = prior, 
-                  prior_intercept = prior_intercept, chains=chains, 
-                 thresholds = thresholds, cores = 1)
+    ccmodel = cc(sub_label, sub_feature, chain_order = chain_order, 
+                 thresholds = thresholds, alpha_nu = alpha_nu, beta_nu = beta_nu, 
+                 chains = chains, cores = 1)
     ccmodel$attrs = colnames(sub_feature)
     rm(sub_feature)
     
