@@ -62,4 +62,29 @@ cc = function(label,
   
 }
 
-model = cc(label=labels, feature = X_mat, chain_order = colnames(labels))
+# model = cc(label=labels, feature = X_mat, chain_order = colnames(labels))
+
+predict.CC = function(object, newdata, thresholds){
+  
+  predictions = list()
+  for (lab in object$chain_order) {
+    model = object$models[[lab]]
+    ext_fit = rstan::extract(model)
+    alpha_post = matrix(ext_fit$alpha, length(ext_fit$alpha), nrow(newdata))
+    beta_post = ext_fit$beta
+    lp = alpha_post + beta_post %*% t(newdata)
+    probs = 1/(1 + exp(-lp))
+    pred_lab = as.integer(colMeans(probs) > thresholds[[lab]])
+    newdata[[paste0('prev_', lab)]] = pred_lab
+    
+    predictions[[lab]] = pred_lab
+  }
+  
+  return(predictions)
+  
+}
+
+test = rstan::extract(model$models$V1)
+alpha_post = test$alpha
+beta_post = test$beta
+newdata = X_mat
