@@ -51,10 +51,10 @@ model {
   y ~ bernoulli(rho);
 }
 
- //generate synthetic data
+ //generate posterior predictive distributions for y
  generated quantities {
-   int y_rep[N];
- 
-   y_rep = bernoulli_rng(rho);
+   vector[N] pred_prob;
+   
+   pred_prob = rho;
  }
 
