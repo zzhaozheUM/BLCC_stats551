@@ -31,6 +31,7 @@ lcard_threshold = function(pred_list, cardinality){
 cc = function(label,
               feature,
               chain_order,
+              thresholds,
               alpha_nu = 5,
               beta_nu = 5,
               chains = 4,
@@ -40,7 +41,6 @@ cc = function(label,
               thin = 1){
   
   ccmodel = list(chain_order=chain_order) 
-  thresholds = floor(colMeans(label)*100)/100
   ccmodel$models = list()
   
   for(i in chain_order){

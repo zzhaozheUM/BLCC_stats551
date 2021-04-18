@@ -25,7 +25,9 @@ mod_c = stanc("logit.stan")
 model = stan_model(stanc_ret = mod_c)
 
 # test ECC: -------------------------------------------------------------------
-cc_model = cc(label=labels, feature = X_mat, chain_order = colnames(labels))
+thresholds = floor(colMeans(labels)*100)/100
+cc_model = cc(label=labels, feature = X_mat, chain_order = colnames(labels),
+              thresholds = thresholds)
 
 ecc_model = ecc(hours, features, prior = student_t(7, 0, 2.5), 
     prior_intercept = student_t(7, 0, 2.5), chains = 1, cores=2, m = 10, 
