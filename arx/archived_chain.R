@@ -13,14 +13,14 @@ library(pROC)
 # voting scheme
 lcard_threshold = function(pred_list, cardinality){
   
-  w = do.call(sum, pred_list) / length(pred_list)
+  w = Reduce("+" , pred_list) / length(pred_list)
   thresholds = seq(0.05, 0.95, by=0.05)
   best = which.min(abs(cardinality - sapply(thresholds, function(ts) 
     mean(rowSums(w >= ts)) 
   ) 
   ))
   t = thresholds[best]
-  results = as.numeric(w >= t)
+  results = 1*(w >= t)
   
   return(results)
   
@@ -120,6 +120,8 @@ ecc = function(label,
     print(sub_feature)
     chain_order = idx[[iteration]]$chain_order
     
+    label = label[idx[[iteration]]$rows, ]
+    
     ccmodel = cc(label, sub_feature, chain_order, prior = prior, 
                  prior_intercept = prior_intercept, chains=chains, 
                  thresholds = thresholds, cores = 1)
@@ -136,15 +138,19 @@ ecc = function(label,
   
 }
 
-predict.ECC = function(object, newdata, thresholds){
+predict.ECC = function(object, newdata, thresholds, orders, cores){
   
-  all_preds = lapply(object$models, function(ccmodel) {
+  all_preds = parallel::mclapply(object$models, function(ccmodel) {
     predict.CC(ccmodel, newdata[, .SD, .SDcols = ccmodel$attrs], thresholds)
-  })
+  }, mc.cores = cores)
   
   preds_list = lapply(all_preds, function(pred) {
     do.call(cbind, pred)
   }  ) 
+  
+  preds_list = lapply(preds_list, function(pred) {
+    pred[, orders]
+  }) 
   
   results = lcard_threshold(preds_list, object$cardinality)
   
