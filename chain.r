@@ -34,13 +34,13 @@ cc = function(label,
               prior, 
               prior_intercept,
               chains,
+              thresholds,
               cores){
   
   ccmodel = list(chain_order=chain_order) 
   num_label = ncol(label)
   var_feat = names(feature)
   dat = cbind(label, feature)
-  thresholds = floor(colMeans(hours)*100)/100
   
   ccmodel$models = list()
   for(i in chain_order){
@@ -72,13 +72,13 @@ cc = function(label,
   
 }
 
-predict.CC = function(object, newdata){
+predict.CC = function(object, newdata, thresholds){
   
   predictions = list()
   for (lab in object$chain_order) {
-    model = ccmodel$models[[lab]]
-    probs = posterior_linpred(classifier, transform = TRUE, newdata = newdata)
-    pred_lab = as.integer(colMeans(preds) > 0.5)
+    model = object$models[[lab]]
+    probs = posterior_epred(model, newdata = newdata)
+    pred_lab = as.integer(colMeans(probs) > thresholds[[lab]])
     newdata[[paste0('prev_', lab)]] = pred_lab
     
     predictions[[lab]] = pred_lab
@@ -96,6 +96,7 @@ ecc = function(label,
                prior_intercept,
                chains, 
                cores, 
+               thresholds,
                m = 10, 
                subsample = 0.75, 
                attr.space = 0.5){
@@ -120,9 +121,12 @@ ecc = function(label,
     chain_order = idx[[iteration]]$chain_order
     
     ccmodel = cc(label, sub_feature, chain_order, prior = prior, 
-                  prior_intercept = prior_intercept, chains=chains, cores = 1)
+                  prior_intercept = prior_intercept, chains=chains, 
+                 thresholds = thresholds, cores = 1)
     ccmodel$attrs = colnames(sub_feature)
     rm(sub_feature)
+    
+    ccmodel
     
   }, mc.cores = cores)
   
@@ -132,11 +136,11 @@ ecc = function(label,
   
 }
 
-predict.ECC = function(object, newdata){
+predict.ECC = function(object, newdata, thresholds){
   
-  all_preds = parallel::mclapply(object$models, function(ccmodel) {
-    predict.CC(ccmodel, newdata[, ccmodel$attrs])
-  }, mc.cores=cores)
+  all_preds = lapply(object$models, function(ccmodel) {
+    predict.CC(ccmodel, newdata[, .SD, .SDcols = ccmodel$attrs], thresholds)
+  })
   
   preds_list = lapply(all_preds, function(pred) {
     do.call(cbind, pred)
