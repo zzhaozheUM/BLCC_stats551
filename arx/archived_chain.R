@@ -138,11 +138,11 @@ ecc = function(label,
   
 }
 
-predict.ECC = function(object, newdata, thresholds, orders){
+predict.ECC = function(object, newdata, thresholds, orders, cores){
   
-  all_preds = lapply(object$models, function(ccmodel) {
+  all_preds = parallel::mclapply(object$models, function(ccmodel) {
     predict.CC(ccmodel, newdata[, .SD, .SDcols = ccmodel$attrs], thresholds)
-  })
+  }, mc.cores = cores)
   
   preds_list = lapply(all_preds, function(pred) {
     do.call(cbind, pred)
@@ -150,7 +150,7 @@ predict.ECC = function(object, newdata, thresholds, orders){
   
   preds_list = lapply(preds_list, function(pred) {
     pred[, orders]
-  }  ) 
+  }) 
   
   results = lcard_threshold(preds_list, object$cardinality)
   
