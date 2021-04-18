@@ -136,11 +136,11 @@ ecc = function(label,
   
 }
 
-predict.ECC = function(object, newdata){
+predict.ECC = function(object, newdata, thresholds){
   
-  all_preds = parallel::mclapply(object$models, function(ccmodel) {
-    predict.CC(ccmodel, newdata[, ccmodel$attrs])
-  }, mc.cores=cores)
+  all_preds = lapply(object$models, function(ccmodel) {
+    predict.CC(ccmodel, newdata[, .SD, .SDcols = ccmodel$attrs], thresholds)
+  })
   
   preds_list = lapply(all_preds, function(pred) {
     do.call(cbind, pred)
