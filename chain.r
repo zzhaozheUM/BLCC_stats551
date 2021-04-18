@@ -31,40 +31,42 @@ lcard_threshold = function(pred_list, cardinality){
 cc = function(label,
               feature,
               chain_order,
-              prior, 
-              prior_intercept,
-              chains,
               thresholds,
-              cores){
+              alpha_nu = 5,
+              beta_nu = 5,
+              chains = 4,
+              cores = 4,
+              iter = 2000,
+              warmup = floor(iter/2), 
+              thin = 1){
   
   ccmodel = list(chain_order=chain_order) 
-  num_label = ncol(label)
-  var_feat = names(feature)
-  dat = cbind(label, feature)
-  
   ccmodel$models = list()
-  for(i in chain_order){
-    var_lab = i
-    rhs = paste(var_feat, collapse ='+')
-    formula = as.formula(paste(var_lab, '~', rhs, sep = ''))
-    classifier = stan_glm(formula=formula, data = dat, family = binomial(link='logit'),
-             prior = prior, prior_intercept = prior_intercept, chains = chains, 
-             cores = cores, QR = T)
-    
-    ccmodel$models[[i]] = classifier
-    
-    probs = posterior_epred(classifier)
-    pred_lab = as.integer(colMeans(probs) > thresholds[var_lab])
-    roc_obj = roc(label[[var_lab]], pred_lab)
-    print(auc(roc_obj))
-    #pred_lab = ifelse(pred_lab == 1, 1-sum(pred_lab)/length(pred_lab), 
-    #                  -sum(pred_lab)/length(pred_lab))
-    dat[[paste0('prev_', i)]] = pred_lab
-    var_feat = c(var_feat, paste0('prev_', i))
-     
-  }
   
-  rm(dat)
+  for(i in chain_order){
+    y = label %>% select(i) %>% unlist(use.names = FALSE)
+    data = list(N = nrow(feature),
+                p = dim(feature)[2],
+                alpha_nu = alpha_nu,
+                alpha_m = 0,
+                alpha_s = 10,
+                beta_nu = rep(beta_nu, dim(feature)[2]),
+                beta_m = rep(0, dim(feature)[2]),
+                beta_s = rep(2.5, dim(feature)[2]),
+                X = feature,
+                y = y)
+    fit_logit = sampling(model, data = data, chains = chains, cores = cores,
+                         iter = iter, warmup = warmup, thin = thin)
+    ccmodel$models[[i]] = fit_logit
+    
+    predicted = as.matrix(fit_logit, pars = "pred_prob")
+    pred_lab = as.integer(colMeans(predicted) > thresholds[i])
+    roc_obj = roc(label[[i]], pred_lab)
+    print(auc(roc_obj))
+    
+    feature = cbind(feature, scaled_factor(pred_lab))
+    colnames(feature)[length(colnames(feature))] = paste0('prev_', i)
+  }
   
   class(ccmodel) = 'CC'
   

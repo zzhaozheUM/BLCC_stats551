@@ -47,7 +47,7 @@ cc = function(label,
                          iter = iter, warmup = warmup, thin = thin)
     ccmodel$models[[i]] = fit_logit
     
-    predicted = as.matrix(fit_logit, pars = "y_rep")
+    predicted = as.matrix(fit_logit, pars = "pred_prob")
     pred_lab = as.integer(colMeans(predicted) > thresholds[i])
     roc_obj = roc(label[[i]], pred_lab)
     print(auc(roc_obj))
