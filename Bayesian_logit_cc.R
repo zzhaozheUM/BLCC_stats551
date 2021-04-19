@@ -34,10 +34,14 @@ cc_pred = predict.CC(cc_model, X_pred, thresholds = thresholds,
 ecc_pred = predict.ECC(ecc_model, X_pred, thresholds =  thresholds, 
                          orders = colnames(labels), cores = 8)
 
-## accuracy rate
+# accuracy rate
 cc_accuracy = multi_accuracy(cc_pred, labels_pred)
 ecc_accuracy = multi_accuracy(ecc_pred, labels_pred)
 
-## F1
-cc_f1 = multi_F1(cc_pred, labels_pred)
-ecc_f1 = multi_F1(ecc_pred, labels_pred)
+# macro F1
+cc_macrof1 = macro_F1(cc_pred, labels_pred)
+ecc_macrof1 = macro_F1(ecc_pred, labels_pred)
+
+# micro F1
+cc_microf1 = micro_F1(cc_pred, labels_pred)
+ecc_microf1 = micro_F1(ecc_pred, labels_pred)
