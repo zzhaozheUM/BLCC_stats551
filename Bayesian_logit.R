@@ -20,7 +20,7 @@ model = stan_model(stanc_ret = mod_c)
 # obtain the model
 bayesmodel = bayes_logit(labels, X_mat, cores = 4)
 
-# obatain the predicted labels
+# obtain the predicted labels
 thresholds = apply(labels, 2, mean)
-prediction = predict.bayes_logit(bayesmodel, X_pred, thresholds = thresholds)
-
+X_pred_mat = scaled_data(X_pred)
+prediction = predict.bayes_logit(bayesmodel, X_pred_mat, thresholds = thresholds)

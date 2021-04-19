@@ -43,7 +43,6 @@ macro_recall = function(actual, prediction) {
   return(recall)
 }
 
-
 # Macro-averaged F1
 macro_F1 = function(actual, prediction) {
   precision = macro_precision(actual, prediction)
@@ -55,4 +54,15 @@ macro_F1 = function(actual, prediction) {
 # Precision (micro)
 micro_precision = function(actual, prediction) {
   
+}
+
+# Recall (micro)
+micro_recall = function(actual, prediction) {
+  
+}
+
+# Micro-averaged F1
+micro_F1 = function(actual, prediction) {
+  recall = micro_recall(actual, prediction)
+  precision = micro_precision(actual, prediction)
 }

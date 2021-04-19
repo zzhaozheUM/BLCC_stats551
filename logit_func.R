@@ -30,14 +30,14 @@ bayes_logit = function(label,
     bayesmodel$models[[i]] = fit_logit
   }
   
-  class(bayesmodel) = 'CC'
+  class(bayesmodel) = 'bayes_logit'
   
   return(bayesmodel)
 }
 
 predict.bayes_logit = function(object, newdata, thresholds) {
   predictions = list()
-  for (lab in object$models) {
+  for (lab in names(object$models)) {
     model = object$models[[lab]]
     ext_fit = rstan::extract(model)
     alpha_post = matrix(ext_fit$alpha, length(ext_fit$alpha), nrow(newdata))
@@ -45,7 +45,6 @@ predict.bayes_logit = function(object, newdata, thresholds) {
     lp = alpha_post + beta_post %*% t(newdata)
     probs = 1/(1 + exp(-lp))
     pred_lab = as.integer(colMeans(probs) > thresholds[[lab]])
-    newdata[[paste0('prev_', lab)]] = pred_lab
     
     predictions[[lab]] = pred_lab
   }
