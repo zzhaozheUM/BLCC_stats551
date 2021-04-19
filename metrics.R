@@ -30,7 +30,17 @@ multi_precision = function(actual, prediction) {
 
 # Recall (label-wise)
 multi_recall = function(actual, prediction) {
+  # true positives
+  num = apply((pred == obs & obs == 1), 2, as.numeric)
+  num = apply(num, 2, sum)
   
+  # false negatives
+  denom = apply((pred != obs & obs == 1), 2, as.numeric)
+  denom = apply(denom, 2, sum)
+  denom = denom + num
+  recall = num / denom
+  
+  return(recall)
 }
 
 # AUC
@@ -43,4 +53,6 @@ multi_auc = function(actual, prediction) {
 # Macro-averaged F1
 
 multi_F1 = function(actual, prediction) {
+  f1 = mean(2 * precision * recall / (precision + recall))
+  return(f1)
 }
