@@ -1,0 +1,113 @@
+---
+title: "model_checking"
+author: "Zhe Zhao"
+date: "4/18/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(rstanarm)
+library(bayesplot)
+library(gridExtra)
+
+# 8am: V5
+# 2pm: V11
+# 10pm: V19
+
+# set working directory to be file directory
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+# label
+labels = data.table::fread("./ATUS_labels2018.csv")
+
+# model object
+load('./BLR/logit_V5.RData')
+logit_8am = copy(fit_logit)
+load('./BLR/logit_V11.RData')
+logit_2pm = copy(fit_logit)
+load('./BLR/logit_V19.RData')
+logit_10pm = copy(fit_logit)
+rm(fit_logit)
+load('./cc_model.RData')
+```
+
+
+```{r Beta estimation}
+print(logit_8am, c('beta'),  probs = c(0.025, 0.5, 0.975))
+#           mean 2.5%   50% 97.5% n_eff Rhat
+#beta[3]    0.69 0.50  0.69  0.87  4877    1
+#beta[4]    0.78 0.44  0.79  1.13  5524    1
+
+print(logit_2pm, c('beta'),  probs = c(0.025, 0.5, 0.975))
+#           mean  2.5%   50% 97.5% n_eff Rhat
+#beta[3]    0.31  -0.04  0.32  0.66  4687    1
+#beta[4]   -0.52  -1.54 -0.50  0.34  3500    1
+
+print(logit_10pm, c('beta'),  probs = c(0.025, 0.5, 0.975))
+#          mean   2.5%   50% 97.5% n_eff Rhat
+#beta[3]   -0.20 -0.36 -0.20 -0.05  5220    1
+#beta[4]   -0.42 -0.74 -0.42 -0.10  6026    1
+
+cc_model$models$V5$coefficients
+round(posterior_interval(cc_model$models$V5, prob = 0.95), 2)
+# mean    2.5%   97.5%  n_eff Rhat
+# 0.736   0.51   0.97   6984  1
+# 0.976   0.60   1.36   6508  1
+
+cc_model$models$V11$coefficients
+round(posterior_interval(cc_model$models$V11, prob = 0.95), 2)
+# mean   2.5%   97.5%  n_eff Rhat
+# 0.23   -0.25  0.74   7107   1 
+# 0.59   0.60   1.36   7476   1
+
+cc_model$models$V19$coefficients
+round(posterior_interval(cc_model$models$V19, prob = 0.95), 2)
+# mean   2.5%   97.5%  n_eff Rhat
+# -0.20  -0.44  0.02   10019  1
+# -0.01  -0.43  0.40   9393   1
+```
+```{r posterior predictive plot}
+p1 = pp_check(cc_model$models$V5)
+p2 = pp_check(cc_model$models$V11)
+p3 = pp_check(cc_model$models$V19)
+grid.arrange(p1, p2, p3, ncol=3)
+
+y_logit = as.matrix(logit_8am, pars = "pred_prob")
+y_logit = apply(y_logit[1:200, ], c(1,2), function(x) sample(c(1,0), 1, prob = c(x, 1-x)))
+p4 = ppc_dens_overlay(labels$V5, y_logit)
+
+y_logit = as.matrix(logit_2pm, pars = "pred_prob")
+y_logit = apply(y_logit[1:200, ], c(1,2), function(x) sample(c(1,0), 1, prob = c(x, 1-x)))
+p5 = ppc_dens_overlay(labels$V11, y_logit)
+
+y_logit = as.matrix(logit_10pm, pars = "pred_prob")
+y_logit = apply(y_logit[1:200, ], c(1,2), function(x) sample(c(1,0), 1, prob = c(x, 1-x)))
+p6 = ppc_dens_overlay(labels$V19, y_logit)
+grid.arrange(p4, p5, p6, ncol=3)
+
+# free up some memories
+rm(y_logit)
+```
+
+
+```{r trace plot}
+rstan::traceplot(logit_8am, c('alpha', 'beta[1]', 'beta[3]','beta[4]'))
+rstan::traceplot(logit_2pm, c('alpha', 'beta[1]', 'beta[3]','beta[4]'))
+rstan::traceplot(logit_10pm, c('alpha', 'beta[1]', 'beta[3]','beta[4]'))
+
+plot(cc_model$models$V5, "trace", pars = c("(Intercept)", "TELFS2Not in the labor force",
+                                           "TELFS2Unemployed", "UNEMPLOYRATE") ) +
+  ggplot2::scale_color_manual(values = c("orangered", "mediumpurple1", "mediumpurple4", "orange"))
+
+plot(cc_model$models$V11, "trace", pars = c("(Intercept)", "TELFS2Not in the labor force",
+                                           "TELFS2Unemployed", "UNEMPLOYRATE") ) +
+  ggplot2::scale_color_manual(values = c("orangered", "mediumpurple1", "mediumpurple4", "orange"))
+
+plot(cc_model$models$V19, "trace", pars = c("(Intercept)", "TELFS2Not in the labor force",
+                                           "TELFS2Unemployed", "UNEMPLOYRATE") ) +
+  ggplot2::scale_color_manual(values = c("orangered", "mediumpurple1", "mediumpurple4", "orange"))
+
+```
+

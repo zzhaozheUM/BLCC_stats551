@@ -27,12 +27,8 @@ bayes_logit = function(label,
                 y = y)
     fit_logit = sampling(model, data = data, chains = chains, cores = cores,
                          iter = iter, warmup = warmup, thin = thin)
-    bayesmodel$models[[i]] = fit_logit
+    save(fit_logit, file = sprintf('./BLR/logit_%s.RData', i))
   }
-  
-  class(bayesmodel) = 'bayes_logit'
-  
-  return(bayesmodel)
 }
 
 predict.bayes_logit = function(object, newdata, thresholds) {
