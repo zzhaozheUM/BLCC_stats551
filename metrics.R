@@ -17,8 +17,8 @@ multi_accuracy = function(actual, prediction) {
   return(result)
 }
 
-# Precision (label-wise)
-multi_precision = function(actual, prediction) {
+# Precision (macro)
+macro_precision = function(actual, prediction) {
   # total positives
   denom = apply(prediction, 2, sum)
   # true positives
@@ -28,8 +28,8 @@ multi_precision = function(actual, prediction) {
   return(precision)
 }
 
-# Recall (label-wise)
-multi_recall = function(actual, prediction) {
+# Recall (macro)
+macro_recall = function(actual, prediction) {
   # true positives
   num = apply((pred == obs & obs == 1), 2, as.numeric)
   num = apply(num, 2, sum)
@@ -43,16 +43,16 @@ multi_recall = function(actual, prediction) {
   return(recall)
 }
 
-# AUC
-
-multi_auc = function(actual, prediction) {
-  precision = multi_precision(actual, prediction) 
-  recall = multi_precision(actual, prediction)
-}
 
 # Macro-averaged F1
-
-multi_F1 = function(actual, prediction) {
+macro_F1 = function(actual, prediction) {
+  precision = macro_precision(actual, prediction)
+  recall = macro_recall(actual, prediction)
   f1 = mean(2 * precision * recall / (precision + recall))
   return(f1)
+}
+
+# Precision (micro)
+macro_precision = function(actul, prediction) {
+  
 }
