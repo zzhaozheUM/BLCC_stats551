@@ -120,9 +120,9 @@ ecc = function(label,
     print(sub_feature)
     chain_order = idx[[iteration]]$chain_order
     
-    label = label[idx[[iteration]]$rows, ]
+    sub_label = label[idx[[iteration]]$rows, ]
     
-    ccmodel = cc(label, sub_feature, chain_order, prior = prior, 
+    ccmodel = cc(sub_label, sub_feature, chain_order, prior = prior, 
                  prior_intercept = prior_intercept, chains=chains, 
                  thresholds = thresholds, cores = 1)
     ccmodel$attrs = colnames(sub_feature)
