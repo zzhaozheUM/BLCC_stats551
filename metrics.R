@@ -53,16 +53,40 @@ macro_F1 = function(actual, prediction) {
 
 # Precision (micro)
 micro_precision = function(actual, prediction) {
+  # true positives
+  num = apply(prediction == actual & actual == 1, 2, as.numeric)
+  num = apply(num, 1, sum)
   
+  # total positives
+  denom = apply(prediction, 1, sum)
+  
+  # precision
+  precision = num / denom
+  
+  return(precision)
 }
 
 # Recall (micro)
 micro_recall = function(actual, prediction) {
+  # true positives
+  num = apply(prediction == actual & actual == 1, 2, as.numeric)
+  num = apply(num, 1, sum)
   
+  # false negatives
+  denom = apply((prediction != actual & actual == 1), 2, as.numeric)
+  denom = apply(denom, 1, sum)
+  denom = denom + num
+  recall = num / denom
+  
+  return(recall)
 }
 
 # Micro-averaged F1
 micro_F1 = function(actual, prediction) {
   recall = micro_recall(actual, prediction)
   precision = micro_precision(actual, prediction)
+  
+  f1 = mean(2 * precision * recall / (precision + recall))
+  
+  return(f1)
 }
