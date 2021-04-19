@@ -53,8 +53,14 @@ macro_F1 = function(actual, prediction) {
 }
 
 # Precision (micro)
+<<<<<<< HEAD
 macro_precision = function(actual, prediction) {
   
 }
 
 # 
+=======
+macro_precision = function(actul, prediction) {
+  
+}
+>>>>>>> 8c68dc9e61dc6b33fc0f3b4ca4f5ccc49aa00004
