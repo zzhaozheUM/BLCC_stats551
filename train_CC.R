@@ -1,6 +1,6 @@
 # Run project 
 #
-# Author: Zhe Zhao
+# Author: Xiru Lyu, Zhe Zhao
 # Last Updated: Apr 14th, 2021
 
 # set up: ---------------------------------------------------------------------
